@@ -9,7 +9,7 @@ const session=require("express-session");
 const passport=require("passport");
 const passportLocalMongoose=require("passport-local-mongoose");
 
-
+let error="";
 
 const app=express();
 app.use(express.static("public"));
@@ -17,9 +17,9 @@ app.use(express.static("public"));
 app.set("view engine","ejs");
 app.use(bodyParser.urlencoded({
   extended:true
-})); 
+}));
 app.use(session({
-  secret: 'keyboard cat',
+  secret: process.env.SECRET,
   resave: false,
   saveUninitialized: false,
 
@@ -53,7 +53,9 @@ passport.deserializeUser(User.deserializeUser());
  });
 
  app.get("/register",function(req,res){
-   res.render("register");
+   res.render("register",{
+     error:error
+   });
  });;
 
 app.get("/logout",function(req,res){
@@ -70,10 +72,17 @@ app.get("/secrets",function(req,res){
 });
 
 //post
-app.post("/register",function(req,res){
 
+app.post("/register",function(req,res){
+  error="";
+if(req.body.confirm !=req.body.password){
+  error="passwords are not matching";
+    res.redirect("/register");
+}
+else {
 User.register({username:req.body.username},req.body.password,function(err,user){
   if(err){
+    error="A user with the given username is already registered";
     console.log(err);
     res.redirect("/register");
   }
@@ -83,7 +92,7 @@ User.register({username:req.body.username},req.body.password,function(err,user){
     })
   }
 })
-
+}
 });
 
 app.post("/login",function(req,res){
